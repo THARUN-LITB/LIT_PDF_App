@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIT PDF Converter</title>
+    <script src="jspdf.min.js"></script>
+    <style>
+        :root { --primary: #4e54c8; --secondary: #8f94fb; --accent: #00f2fe; --dark: #1a1a2e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark); margin: 0; padding: 20px; color: white; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+        .container { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); max-width: 500px; margin: auto; padding: 30px; border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .logo-img { width: 100px; height: 100px; object-fit: cover; border-radius: 50%; margin-bottom: 15px; border: 2px solid var(--accent); }
+        h1 { margin: 0; font-size: 24px; background: linear-gradient(to right, var(--accent), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
+        .upload-area { border: 2px dashed var(--secondary); padding: 25px; margin: 20px 0; border-radius: 15px; cursor: pointer; transition: 0.3s; }
+        .upload-area:hover { border-color: var(--accent); background: rgba(255, 255, 255, 0.05); }
+        #preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; margin-top: 15px; max-height: 180px; overflow-y: auto; }
+        .thumb { width: 100%; height: 70px; object-fit: cover; border-radius: 8px; }
+        .btn-convert { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; background: linear-gradient(45deg, var(--primary), var(--secondary)); color: white; margin-top: 15px; }
+        .btn-convert:disabled { background: #444; opacity: 0.6; }
+        .footer { margin-top: 20px; font-size: 11px; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="logo.jpg" class="logo-img" alt="LOGO">
+    <h1>LIT PDF CONVERTER</h1>
+    
+    <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+        <p id="statusText">Select JPG Images</p>
+        <input type="file" id="imageInput" accept="image/jpeg, image/jpg" multiple style="display:none">
+    </div>
+
+    <div id="preview"></div>
+
+    <button class="btn-convert" id="convertBtn" onclick="generatePDF()">DOWNLOAD PDF</button>
+    <div class="footer">OFFLINE ENCRYPTED • NO DATA UPLOADED</div>
+</div>
+
+<script>
+    const input = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const statusText = document.getElementById('statusText');
+    const convertBtn = document.getElementById('convertBtn');
+
+    input.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            statusText.innerText = this.files.length + " Images Ready";
+            preview.innerHTML = "";
+            Array.from(this.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'thumb';
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    });
+
+    async function generatePDF() {
+        if (typeof window.jspdf === 'undefined') {
+            alert("Error: jspdf.min.js not found in the same folder.");
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const files = input.files;
+        if (files.length === 0) return alert("Select images first!");
+
+        convertBtn.disabled = true;
+        convertBtn.innerText = "Processing...";
+
+        try {
+            const pdf = new jsPDF();
+            for (let i = 0; i < files.length; i++) {
+                const imgData = await new Promise(resolve => {
+                    const rd = new FileReader();
+                    rd.onload = e => resolve(e.target.result);
+                    rd.readAsDataURL(files[i]);
+                });
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 10, 10, 190, 277);
+            }
+            pdf.save('LIT_Converter_Export.pdf');
+        } catch (e) {
+            alert("Error: " + e.message);
+        } finally {
+            convertBtn.disabled = false;
+            convertBtn.innerText = "DOWNLOAD PDF";
+        }
+    }
+</script>
+</body>
+</html>
